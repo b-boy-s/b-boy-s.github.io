@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智纹创生</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f0f0f0;
+    }
+    header {
+      background-color: #2e1a47;
+      color: #fff;
+      padding: 10px 20px;
+      text-align: center;
+    }
+    header h1 {
+      font-size: 2.5em;
+      margin: 0;
+    }
+    .main-container {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      padding: 30px;
+      background-image: url('背景图片链接');
+      background-size: cover;
+      background-position: center;
+    }
+    .left-side {
+      flex: 1;
+      padding: 20px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: #fff;
+      border-radius: 10px;
+    }
+    .right-side {
+      flex: 1;
+      padding: 20px;
+      background-color: rgba(255, 255, 255, 0.7);
+      color: #333;
+      border-radius: 10px;
+      overflow-y: scroll;
+      height: 400px;
+    }
+    .right-side h3 {
+      font-size: 1.5em;
+      margin-bottom: 10px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #d4af37;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 5px;
+      margin-top: 20px;
+      transition: background-color 0.3s;
+    }
+    .btn:hover {
+      background-color: #bf8c2a;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>智纹创生</h1>
+  </header>
+  <div class="main-container">
+    <div class="left-side">
+      <h2>文物纹样生成</h2>
+      <p>探索古老文物，创造专属于你的文创图案。</p>
+      <a href="#生成页面" class="btn">开始生成</a>
+    </div>
+    <div class="right-side">
+      <h3>文物介绍</h3>
+      <div class="scroll-content">
+        <img src="./image.png" alt="文物1" style="width: 100%; height: auto; border-radius: 10px;">
+        <p>文物1的描述和历史背景……</p>
+        <img src="文物图片链接" alt="文物2" style="width: 100%; height: auto; border-radius: 10px;">
+        <p>文物2的描述和历史背景……</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
