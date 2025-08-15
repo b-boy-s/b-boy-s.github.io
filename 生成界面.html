@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>文物纹样生成器</title>
     <style>
-        /* CSS 样式保持不变 */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -106,6 +105,12 @@
             background-color: #ddd;
         }
 
+        /* 按钮选中状态 */
+        .category button.selected, .options button.selected {
+            background-color: #4CAF50;
+            color: white;
+        }
+
         .submit-btn {
             width: 100%;
             padding: 15px;
@@ -120,6 +125,41 @@
         .submit-btn:hover {
             background-color: #1976D2;
         }
+        
+        /* 加载动画 */
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 错误消息 */
+        .error-message {
+            color: #d32f2f;
+            padding: 10px;
+            background-color: #ffebee;
+            border-radius: 4px;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        /* 等待消息 */
+        .wait-message {
+            text-align: center;
+            margin: 10px 0;
+            color: #666;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -131,6 +171,12 @@
         <div class="preview-module">
             <div class="preview-header">效果预览图</div>
             <img id="image-display" class="image-display" src="" alt="生成的效果图">
+            <!-- 加载指示器 -->
+            <div id="loader" class="loader"></div>
+            <!-- 等待消息 -->
+            <div id="wait-message" class="wait-message">正在生成图像，可能需要 20-30 秒...</div>
+            <!-- 错误消息 -->
+            <div id="error-message" class="error-message"></div>
         </div>
 
         <!-- 按钮模块 -->
@@ -144,16 +190,16 @@
     <div class="right-panel">
         <h2>选择文物纹样类型</h2>
         <div class="category">
-            <button onclick="selectCategory('青铜')">青铜</button>
-            <button onclick="selectCategory('珐琅')">珐琅</button>
-            <button onclick="selectCategory('青花瓷')">青花瓷</button>
+            <button onclick="selectCategory('青铜', this)">青铜</button>
+            <button onclick="selectCategory('珐琅', this)">珐琅</button>
+            <button onclick="selectCategory('青花瓷', this)">青花瓷</button>
         </div>
 
         <h2>选择具体对象</h2>
         <div class="options">
-            <button onclick="selectOption('水杯')">水杯</button>
-            <button onclick="selectOption('小猫')">小猫</button>
-            <button onclick="selectOption('房子')">房子</button>
+            <button onclick="selectOption('水杯', this)">水杯</button>
+            <button onclick="selectOption('小猫', this)">小猫</button>
+            <button onclick="selectOption('房子', this)">房子</button>
         </div>
 
         <button class="submit-btn" onclick="submitRequest()">提交</button>
@@ -164,17 +210,34 @@
     let selectedCategory = "";
     let selectedOption = "";
     let generatedImage = "";
+    let timeoutId = null; // 用于存储超时计时器ID
 
-    // 选择文物类型
-    function selectCategory(category) {
+    // 选择文物类型（添加高亮效果）
+    function selectCategory(category, element) {
         selectedCategory = category;
         console.log("选择的文物类型：", selectedCategory);
+        
+        // 移除所有按钮的高亮
+        document.querySelectorAll('.category button').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+        
+        // 为当前选中的按钮添加高亮
+        element.classList.add('selected');
     }
 
-    // 选择具体对象
-    function selectOption(option) {
+    // 选择具体对象（添加高亮效果）
+    function selectOption(option, element) {
         selectedOption = option;
         console.log("选择的对象：", selectedOption);
+        
+        // 移除所有按钮的高亮
+        document.querySelectorAll('.options button').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+        
+        // 为当前选中的按钮添加高亮
+        element.classList.add('selected');
     }
 
     // 提交请求到后端生成图像
@@ -183,21 +246,79 @@
             const prompt = `${selectedCategory}的${selectedOption}`;
             console.log("生成提示词:", prompt);
             
+            // 显示加载指示器和消息
+            document.getElementById("loader").style.display = "block";
+            document.getElementById("wait-message").style.display = "block";
+            document.getElementById("image-display").style.display = "none";
+            document.getElementById("error-message").style.display = "none";
+            
+            // 后端API地址 - 使用你的PythonAnywhere域名
+            const backendUrl = 'https://bboys.pythonanywhere.com/generate_image';
+            
+            // 创建超时控制器（25秒超时）
+            const controller = new AbortController();
+            const signal = controller.signal;
+            
+            // 设置超时计时器
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                controller.abort();
+            }, 60000); // 60秒超时
+            
             // 发送请求到后端
-            fetch('/generate_image', {
+            fetch(backendUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ prompt: prompt })  // 传递选择的文本提示词
+                body: JSON.stringify({ prompt: prompt }),
+                signal: signal // 传入超时信号
             })
-            .then(response => response.json())
+            .then(response => {
+                // 清除超时计时器
+                clearTimeout(timeoutId);
+                
+                // 检查响应状态
+                if (!response.ok) {
+                    throw new Error(`HTTP错误! 状态码: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
-                generatedImage = data.image_url;  // 后端返回的图像 URL
-                document.getElementById("image-display").src = generatedImage;  // 将图像显示在前端
-                document.getElementById("image-display").style.display = "block";  // 显示图片
+                if (data.error) {
+                    // 处理后端返回的错误
+                    throw new Error(data.error);
+                }
+                
+                // 检查是否返回了有效的图像URL
+                if (!data.image_url || !data.image_url.startsWith('data:image/png;base64')) {
+                    throw new Error('返回的图像数据无效');
+                }
+                
+                generatedImage = data.image_url;
+                document.getElementById("image-display").src = generatedImage;
+                document.getElementById("image-display").style.display = "block";
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => {
+                console.error('错误:', error);
+                
+                // 显示错误消息给用户
+                let errorMsg = '生成失败: ';
+                
+                if (error.name === 'AbortError') {
+                    errorMsg += '请求超时（超过60秒），请稍后再试';
+                } else {
+                    errorMsg += error.message || '未知错误';
+                }
+                
+                document.getElementById("error-message").textContent = errorMsg;
+                document.getElementById("error-message").style.display = "block";
+            })
+            .finally(() => {
+                // 隐藏加载指示器和消息
+                document.getElementById("loader").style.display = "none";
+                document.getElementById("wait-message").style.display = "none";
+            });
         } else {
             alert("请先选择文物类型和对象！");
         }
@@ -207,16 +328,19 @@
     function undo() {
         generatedImage = "";
         document.getElementById("image-display").src = "";
-        document.getElementById("image-display").style.display = "none";  // 隐藏图片
+        document.getElementById("image-display").style.display = "none";
+        document.getElementById("error-message").style.display = "none";
     }
 
     // 下载按钮
     function downloadImage() {
         if (generatedImage) {
             const link = document.createElement('a');
-            link.href = generatedImage;  // 图像 URL
-            link.download = 'generated_image.png';
-            link.click();  // 模拟点击下载链接
+            link.href = generatedImage;
+            link.download = `${selectedCategory || '文物'}_${selectedOption || '纹样'}_${Date.now()}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         } else {
             alert("请先生成一张图片！");
         }
